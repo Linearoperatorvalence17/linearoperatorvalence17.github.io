@@ -4,49 +4,25 @@
   const panels = ["home", "about", "works", "links"];
   const homePanel = document.querySelector(".panel-home");
   const cursorSymbols = document.getElementById("cursor-symbols");
-  const cursorSymbolCount = 20;
+  const cursorSymbolCount = 12;
   const symbolPatterns = [
-    {
-      name: "circle-5",
-      rows: ["01110", "10001", "10001", "10001", "01110"],
-    },
-    {
-      name: "cross-5",
-      rows: ["00100", "00100", "11111", "00100", "00100"],
-    },
-    {
-      name: "x-5",
-      rows: ["10001", "01010", "00100", "01010", "10001"],
-    },
-    {
-      name: "circle-4",
-      rows: ["0110", "1001", "1001", "0110"],
-    },
-    {
-      name: "cross-3",
-      rows: ["010", "111", "010"],
-    },
-    {
-      name: "x-3",
-      rows: ["101", "010", "101"],
-    },
-    {
-      name: "diamond-circle-3",
-      rows: ["010", "101", "010"],
-    },
-    {
-      name: "dot-2",
-      rows: ["11", "11"],
-    },
+    ["01110", "10001", "10001", "10001", "01110"],
+    ["00100", "00100", "11111", "00100", "00100"],
+    ["10001", "01010", "00100", "01010", "10001"],
+    ["0110", "1001", "1001", "0110"],
+    ["010", "111", "010"],
+    ["101", "010", "101"],
+    ["010", "101", "010"],
+    ["11", "11"],
   ];
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   let active = "home";
   let workLoaded = false;
   let pointerInsideHome = false;
   let pointerMoving = false;
   let pointerStopTimer = 0;
   let motionFrame = 0;
-  let motionClock = 0;
   let lastFrameAt = 0;
   let pointerX = 0;
   let pointerY = 0;
@@ -63,22 +39,35 @@
     pointerMoving = false;
     pointerSpeed = 0;
     window.clearTimeout(pointerStopTimer);
+
     if (motionFrame) {
       cancelAnimationFrame(motionFrame);
       motionFrame = 0;
     }
   }
 
-  function buildPixelSymbol(pattern) {
+  function makeCursorSymbol(stagger = false) {
+    const rows = symbolPatterns[Math.floor(Math.random() * symbolPatterns.length)];
     const symbol = document.createElement("span");
+    const rect = cursorSymbols.getBoundingClientRect();
+    const angle = Math.random() * Math.PI * 2;
+    const radius = Math.random() * 60;
+    const lifetime = 700 + Math.random() * 500;
+    const x = pointerX - rect.left + Math.cos(angle) * radius;
+    const y = pointerY - rect.top + Math.sin(angle) * radius;
+
     symbol.className = "cursor-symbol";
-    symbol.dataset.pattern = pattern.name;
-    symbol.style.setProperty("--grid-size", String(pattern.rows.length));
+    symbol.dataset.tone = Math.random() < 0.5 ? "a" : "b";
+    symbol.style.setProperty("--grid-size", String(rows.length));
+    symbol.style.left = `${Math.max(8, Math.min(rect.width - 8, x))}px`;
+    symbol.style.top = `${Math.max(8, Math.min(rect.height - 8, y))}px`;
+    symbol._remainingLife = stagger ? Math.random() * lifetime : lifetime;
     symbol.setAttribute("aria-hidden", "true");
 
-    pattern.rows.forEach((row, rowIndex) => {
+    rows.forEach((row, rowIndex) => {
       [...row].forEach((cell, columnIndex) => {
         if (cell !== "1") return;
+
         const pixel = document.createElement("i");
         pixel.className = "cursor-pixel";
         pixel.style.gridRowStart = String(rowIndex + 1);
@@ -90,46 +79,16 @@
     return symbol;
   }
 
-  function spawnCursorSymbol(stagger = false) {
-    if (
-      active !== "home" ||
-      !pointerInsideHome ||
-      !pointerMoving ||
-      reduceMotion ||
-      !cursorSymbols ||
-      document.hidden
-    ) return;
-
-    const rect = cursorSymbols.getBoundingClientRect();
-    const angle = Math.random() * Math.PI * 2;
-    const radius = Math.random() * 60;
-    const pattern = symbolPatterns[Math.floor(Math.random() * symbolPatterns.length)];
-    const symbol = buildPixelSymbol(pattern);
-    const x = pointerX - rect.left + Math.cos(angle) * radius;
-    const y = pointerY - rect.top + Math.sin(angle) * radius;
-    const life = 700 + Math.floor(Math.random() * 500);
-
-    symbol.dataset.tone = Math.random() < 0.5 ? "a" : "b";
-    symbol.dataset.life = String(life);
-    symbol.dataset.bornAt = String(stagger ? motionClock - Math.random() * life : motionClock);
-    symbol.style.left = `${Math.max(8, Math.min(rect.width - 8, x))}px`;
-    symbol.style.top = `${Math.max(8, Math.min(rect.height - 8, y))}px`;
-    cursorSymbols.appendChild(symbol);
-  }
-
-  function maintainCursorSymbolCount(stagger = false) {
+  function fillCursorSymbols(stagger = false) {
     if (!cursorSymbols) return;
+
     while (cursorSymbols.childElementCount < cursorSymbolCount) {
-      spawnCursorSymbol(stagger);
-    }
-    while (cursorSymbols.childElementCount > cursorSymbolCount) {
-      cursorSymbols.firstElementChild?.remove();
+      cursorSymbols.appendChild(makeCursorSymbol(stagger));
     }
   }
 
   function getTurnoverRate() {
-    const speedRatio = Math.min(1, pointerSpeed / 1.8);
-    return 1 + speedRatio * 3;
+    return 1 + Math.min(1, pointerSpeed / 1.8) * 3;
   }
 
   function updateCursorSymbols(now) {
@@ -137,30 +96,31 @@
     if (!pointerMoving || active !== "home" || !pointerInsideHome || document.hidden) return;
 
     if (!lastFrameAt) lastFrameAt = now;
-    const elapsed = Math.min(50, now - lastFrameAt);
-    motionClock += elapsed * getTurnoverRate();
+    const elapsed = Math.min(50, now - lastFrameAt) * getTurnoverRate();
     lastFrameAt = now;
 
-    cursorSymbols?.querySelectorAll(".cursor-symbol").forEach(symbol => {
-      const bornAt = Number(symbol.dataset.bornAt);
-      const life = Number(symbol.dataset.life);
-      if (motionClock - bornAt >= life) symbol.remove();
+    [...cursorSymbols.children].forEach(symbol => {
+      symbol._remainingLife -= elapsed;
+      if (symbol._remainingLife <= 0) {
+        symbol.replaceWith(makeCursorSymbol());
+      }
     });
-    maintainCursorSymbolCount();
 
     motionFrame = requestAnimationFrame(updateCursorSymbols);
   }
 
   function resumeCursorSymbols() {
-    if (pointerMoving || reduceMotion) return;
+    if (pointerMoving || reduceMotion || !cursorSymbols) return;
+
     pointerMoving = true;
     lastFrameAt = 0;
-    maintainCursorSymbolCount(true);
+    fillCursorSymbols(true);
     motionFrame = requestAnimationFrame(updateCursorSymbols);
   }
 
   homePanel?.addEventListener("pointerenter", event => {
     if (event.pointerType === "touch") return;
+
     pointerInsideHome = true;
     pointerX = event.clientX;
     pointerY = event.clientY;
@@ -171,6 +131,7 @@
 
   homePanel?.addEventListener("pointermove", event => {
     if (event.pointerType === "touch") return;
+
     const now = performance.now();
     const elapsed = Math.max(1, now - lastPointerAt);
     const distance = Math.hypot(event.clientX - lastPointerX, event.clientY - lastPointerY);
@@ -197,16 +158,20 @@
   function showPanel(name, pushHash = false) {
     if (!panels.includes(name)) name = "home";
     active = name;
+
     panels.forEach(panelName => {
       const panel = document.querySelector(`[data-panel="${panelName}"]`);
       const link = document.querySelector(`[data-nav="${panelName}"]`);
       const selected = panelName === name;
+
       panel.hidden = !selected;
       if (selected) link.setAttribute("aria-current", "page");
       else link.removeAttribute("aria-current");
     });
+
     if (pushHash && location.hash !== `#${name}`) history.pushState(null, "", `#${name}`);
     if (name === "works" && !workLoaded) showWork(workIndex);
+
     if (name !== "home") {
       pointerInsideHome = false;
       pauseCursorSymbols();
@@ -250,6 +215,7 @@
 
   function showWork(index) {
     workLoaded = true;
+
     if (!workCount) {
       workIndex = 0;
       number.textContent = "00";
@@ -261,9 +227,11 @@
     workIndex = (index + workCount) % workCount;
     const position = String(workIndex + 1).padStart(2, "0");
     const picture = makeImage(works[workIndex], `k.a.256 のイラスト作品 ${workIndex + 1}`);
+
     picture.addEventListener("error", () => {
       image.textContent = `画像を読み込めませんでした: ${works[workIndex]}`;
     }, { once: true });
+
     image.replaceChildren(picture);
     image.setAttribute("aria-label", `k.a.256 のイラスト作品 ${workIndex + 1}`);
     number.textContent = position;
@@ -287,6 +255,7 @@
 
   previousButton.addEventListener("click", () => showWork(workIndex - 1));
   nextButton.addEventListener("click", () => showWork(workIndex + 1));
+
   document.addEventListener("keydown", event => {
     if (active !== "works" || workCount < 2) return;
     if (event.key === "ArrowLeft") showWork(workIndex - 1);
@@ -296,10 +265,13 @@
   const themeKey = "ka256-site-theme";
   const savedTheme = localStorage.getItem(themeKey);
   if (savedTheme === "night") document.documentElement.dataset.theme = "night";
+
   document.getElementById("theme-toggle").addEventListener("click", () => {
     const isNight = document.documentElement.dataset.theme === "night";
+
     if (isNight) delete document.documentElement.dataset.theme;
     else document.documentElement.dataset.theme = "night";
+
     localStorage.setItem(themeKey, isNight ? "light" : "night");
   });
 
