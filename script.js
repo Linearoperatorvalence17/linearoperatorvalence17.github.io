@@ -97,7 +97,7 @@
 
     const rect = cursorSymbols.getBoundingClientRect();
     const angle = Math.random() * Math.PI * 2;
-    const radius = 18 + Math.random() * 42;
+    const radius = Math.random() * 60;
     const pattern = symbolPatterns[Math.floor(Math.random() * symbolPatterns.length)];
     const symbol = buildPixelSymbol(pattern);
     const x = pointerX - rect.left + Math.cos(angle) * radius;
