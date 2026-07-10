@@ -50,6 +50,10 @@
   let lastSymbolAt = -Infinity;
   let pointerX = 0;
   let pointerY = 0;
+  let pointerSpeed = 0;
+  let lastPointerX = 0;
+  let lastPointerY = 0;
+  let lastPointerAt = 0;
 
   function clearCursorSymbols() {
     cursorSymbols?.replaceChildren();
@@ -57,6 +61,7 @@
 
   function pauseCursorSymbols() {
     pointerMoving = false;
+    pointerSpeed = 0;
     window.clearTimeout(pointerStopTimer);
     if (motionFrame) {
       cancelAnimationFrame(motionFrame);
@@ -110,7 +115,12 @@
     symbol.style.top = `${Math.max(8, Math.min(rect.height - 8, y))}px`;
     cursorSymbols.appendChild(symbol);
 
-    while (cursorSymbols.childElementCount > 20) cursorSymbols.firstElementChild?.remove();
+    while (cursorSymbols.childElementCount > 36) cursorSymbols.firstElementChild?.remove();
+  }
+
+  function getSpawnInterval() {
+    const speedRatio = Math.min(1, pointerSpeed / 1.8);
+    return 120 - speedRatio * 90;
   }
 
   function updateCursorSymbols(now) {
@@ -121,7 +131,8 @@
     motionClock += Math.min(50, now - lastFrameAt);
     lastFrameAt = now;
 
-    if (motionClock - lastSymbolAt >= 70) {
+    const spawnInterval = getSpawnInterval();
+    if (motionClock - lastSymbolAt >= spawnInterval) {
       lastSymbolAt = motionClock;
       spawnCursorSymbol();
     }
@@ -147,13 +158,25 @@
     pointerInsideHome = true;
     pointerX = event.clientX;
     pointerY = event.clientY;
+    lastPointerX = event.clientX;
+    lastPointerY = event.clientY;
+    lastPointerAt = performance.now();
   });
 
   homePanel?.addEventListener("pointermove", event => {
     if (event.pointerType === "touch") return;
+    const now = performance.now();
+    const elapsed = Math.max(1, now - lastPointerAt);
+    const distance = Math.hypot(event.clientX - lastPointerX, event.clientY - lastPointerY);
+    const instantSpeed = distance / elapsed;
+
     pointerInsideHome = true;
     pointerX = event.clientX;
     pointerY = event.clientY;
+    pointerSpeed = pointerSpeed * 0.55 + instantSpeed * 0.45;
+    lastPointerX = event.clientX;
+    lastPointerY = event.clientY;
+    lastPointerAt = now;
     resumeCursorSymbols();
 
     window.clearTimeout(pointerStopTimer);
