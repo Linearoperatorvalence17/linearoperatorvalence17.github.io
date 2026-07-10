@@ -1,0 +1,36 @@
+:root[data-theme="night"] {
+  --bg: #303030;
+  --text: #bbb5ae;
+  --strong: #dad3cb;
+  --line-a: #765641;
+  --line-b: #625e59;
+  --hair: #4c4845;
+  --panel: rgb(48 48 48 / .82);
+}
+
+#works-image {
+  overflow: hidden;
+}
+
+#works-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.works-thumb {
+  overflow: hidden;
+}
+
+.works-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.step-btn:disabled {
+  opacity: .3;
+  cursor: default;
+}
