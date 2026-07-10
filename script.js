@@ -2,8 +2,63 @@
   "use strict";
 
   const panels = ["home", "about", "works", "links"];
+  const homePanel = document.querySelector(".panel-home");
+  const cursorSymbols = document.getElementById("cursor-symbols");
+  const symbolGlyphs = ["・", "○", "。", "+", "×"];
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let active = "home";
   let workLoaded = false;
+  let pointerInsideHome = false;
+  let pointerX = 0;
+  let pointerY = 0;
+
+  function clearCursorSymbols() {
+    cursorSymbols?.replaceChildren();
+  }
+
+  function spawnCursorSymbol() {
+    if (active !== "home" || !pointerInsideHome || reduceMotion || !cursorSymbols || document.hidden) return;
+
+    const rect = cursorSymbols.getBoundingClientRect();
+    const angle = Math.random() * Math.PI * 2;
+    const radius = 18 + Math.random() * 52;
+    const symbol = document.createElement("span");
+    const x = pointerX - rect.left + Math.cos(angle) * radius;
+    const y = pointerY - rect.top + Math.sin(angle) * radius;
+
+    symbol.className = "cursor-symbol";
+    symbol.textContent = symbolGlyphs[Math.floor(Math.random() * symbolGlyphs.length)];
+    symbol.dataset.tone = Math.random() < 0.5 ? "a" : "b";
+    symbol.style.left = `${Math.max(8, Math.min(rect.width - 8, x))}px`;
+    symbol.style.top = `${Math.max(8, Math.min(rect.height - 8, y))}px`;
+    symbol.style.fontSize = `${10 + Math.floor(Math.random() * 9)}px`;
+    symbol.style.setProperty("--symbol-life", `${900 + Math.floor(Math.random() * 650)}ms`);
+    symbol.style.animationDelay = `${Math.floor(Math.random() * 120)}ms`;
+    symbol.addEventListener("animationend", () => symbol.remove(), { once: true });
+    cursorSymbols.appendChild(symbol);
+
+    while (cursorSymbols.childElementCount > 20) cursorSymbols.firstElementChild?.remove();
+  }
+
+  homePanel?.addEventListener("pointerenter", event => {
+    if (event.pointerType === "touch") return;
+    pointerInsideHome = true;
+    pointerX = event.clientX;
+    pointerY = event.clientY;
+  });
+
+  homePanel?.addEventListener("pointermove", event => {
+    if (event.pointerType === "touch") return;
+    pointerInsideHome = true;
+    pointerX = event.clientX;
+    pointerY = event.clientY;
+  }, { passive: true });
+
+  homePanel?.addEventListener("pointerleave", () => {
+    pointerInsideHome = false;
+  });
+
+  window.setInterval(spawnCursorSymbol, 120);
 
   function showPanel(name, pushHash = false) {
     if (!panels.includes(name)) name = "home";
@@ -18,6 +73,10 @@
     });
     if (pushHash && location.hash !== `#${name}`) history.pushState(null, "", `#${name}`);
     if (name === "works" && !workLoaded) showWork(workIndex);
+    if (name !== "home") {
+      pointerInsideHome = false;
+      clearCursorSymbols();
+    }
   }
 
   document.querySelectorAll("[data-nav]").forEach(link => {
