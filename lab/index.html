@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sphere + Lines Parameter Lab</title>
+  <meta name="description" content="球と直線群のドット描画パラメータを比較する試作">
+  <link rel="stylesheet" href="sphere-lab.css">
+</head>
+<body>
+  <main class="lab-shell">
+    <section class="viewport" aria-label="生成結果のプレビュー">
+      <canvas id="scene" aria-label="三次元上の球と直線群のドット投影"></canvas>
+      <div class="viewport-labels" aria-hidden="true">
+        <span id="seed-label"></span>
+        <span id="fps-label"></span>
+      </div>
+      <button id="panel-toggle" class="panel-toggle" type="button" aria-expanded="true" aria-controls="controls">×</button>
+    </section>
+
+    <aside id="controls" class="controls" aria-label="描画パラメータ">
+      <header class="controls-head">
+        <div>
+          <h1>Sphere + Lines</h1>
+          <p>球は輪郭だけを描き、直線は球の内外を問わず表示します</p>
+        </div>
+        <button id="theme-toggle" class="icon-button" type="button" aria-label="表示色を切り替える">◐</button>
+      </header>
+
+      <div class="actions primary-actions">
+        <button id="new-seed" type="button">配置を再生成</button>
+        <button id="random-params" type="button">値もランダム</button>
+      </div>
+
+      <fieldset>
+        <legend>個数</legend>
+        <label class="control-row">
+          <span>球の数</span>
+          <input id="sphere-count" type="range" min="1" max="16" step="1">
+          <output for="sphere-count"></output>
+        </label>
+        <label class="control-row">
+          <span>直線の数</span>
+          <input id="line-count" type="range" min="0" max="40" step="1">
+          <output for="line-count"></output>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>描画単位</legend>
+        <label class="control-row">
+          <span>1セルの大きさ</span>
+          <input id="pixel-size" type="range" min="1" max="8" step="1">
+          <output for="pixel-size"></output>
+        </label>
+        <label class="control-row">
+          <span>描線の太さ</span>
+          <input id="stroke-width" type="range" min="1" max="8" step="1">
+          <output for="stroke-width"></output>
+        </label>
+        <label class="check-row">
+          <input id="random-width" type="checkbox">
+          <span>要素ごとに太さを変える</span>
+        </label>
+        <div id="width-range" class="sub-controls">
+          <label class="control-row">
+            <span>太さの下限</span>
+            <input id="stroke-min" type="range" min="1" max="8" step="1">
+            <output for="stroke-min"></output>
+          </label>
+          <label class="control-row">
+            <span>太さの上限</span>
+            <input id="stroke-max" type="range" min="1" max="8" step="1">
+            <output for="stroke-max"></output>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>球の大きさ</legend>
+        <label class="control-row">
+          <span>半径の下限</span>
+          <input id="radius-min" type="range" min="18" max="180" step="2">
+          <output for="radius-min"></output>
+        </label>
+        <label class="control-row">
+          <span>半径の上限</span>
+          <input id="radius-max" type="range" min="24" max="260" step="2">
+          <output for="radius-max"></output>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>回転</legend>
+        <label class="control-row">
+          <span>マウス回転速度</span>
+          <input id="rotation-speed" type="range" min="1" max="30" step="1">
+          <output for="rotation-speed"></output>
+        </label>
+        <label class="control-row">
+          <span>追従の遅さ</span>
+          <input id="rotation-lag" type="range" min="1" max="30" step="1">
+          <output for="rotation-lag"></output>
+        </label>
+        <button id="reset-view" class="quiet-button" type="button">向きを戻す</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>比較と保存</legend>
+        <div class="actions">
+          <button id="save-favorite" type="button">この値を保存</button>
+          <button id="copy-settings" type="button">JSONをコピー</button>
+        </div>
+        <ol id="favorites" class="favorites" aria-label="保存した設定"></ol>
+      </fieldset>
+
+      <details>
+        <summary>現在の設定</summary>
+        <pre id="settings-json"></pre>
+      </details>
+
+      <p class="note">プレビュー上でマウスを動かすと回転します。配置はランダム性を残しつつ、画面の片側へ偏りにくい生成にしています。</p>
+    </aside>
+  </main>
+
+  <script src="sphere-core.js"></script>
+  <script src="sphere-render.js"></script>
+  <script src="sphere-ui.js"></script>
+</body>
+</html>
