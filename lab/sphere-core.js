@@ -6,8 +6,8 @@ const root = document.documentElement;
 const viewport = document.querySelector(".viewport");
 const controls = document.getElementById("controls");
 
-const STORAGE_KEY = "ka256-sphere-lab-settings-v4";
-const FAVORITES_KEY = "ka256-sphere-lab-favorites-v4";
+const STORAGE_KEY = "ka256-sphere-lab-settings-v5";
+const FAVORITES_KEY = "ka256-sphere-lab-favorites-v5";
 
 const defaultSettings = {
   seed: 2640959168,
@@ -20,6 +20,13 @@ const defaultSettings = {
   strokeMax: 2,
   radiusMin: 30,
   radiusMax: 200,
+  placementBalance: 78,
+  recenterStrength: 85,
+  directionJitter: 24,
+  sphereDistanceMin: 25,
+  sphereDistanceMax: 88,
+  lineOffsetMin: 18,
+  lineOffsetMax: 82,
   rotationSpeed: 3,
   rotationLag: 30,
   theme: "light"
@@ -41,12 +48,13 @@ let fpsTime = performance.now();
 
 const ids = [
   "sphere-count", "line-count", "pixel-size", "stroke-width",
-  "random-width", "stroke-min", "stroke-max", "radius-min",
-  "radius-max", "rotation-speed", "rotation-lag"
+  "random-width", "stroke-min", "stroke-max", "radius-min", "radius-max",
+  "placement-balance", "recenter-strength", "direction-jitter",
+  "sphere-distance-min", "sphere-distance-max", "line-offset-min", "line-offset-max",
+  "rotation-speed", "rotation-lag"
 ];
 
 const inputs = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
-
 const mapping = {
   "sphere-count": "sphereCount",
   "line-count": "lineCount",
@@ -57,6 +65,13 @@ const mapping = {
   "stroke-max": "strokeMax",
   "radius-min": "radiusMin",
   "radius-max": "radiusMax",
+  "placement-balance": "placementBalance",
+  "recenter-strength": "recenterStrength",
+  "direction-jitter": "directionJitter",
+  "sphere-distance-min": "sphereDistanceMin",
+  "sphere-distance-max": "sphereDistanceMax",
+  "line-offset-min": "lineOffsetMin",
+  "line-offset-max": "lineOffsetMax",
   "rotation-speed": "rotationSpeed",
   "rotation-lag": "rotationLag"
 };
@@ -75,90 +90,89 @@ function saveSettings() {
 }
 
 function makeRand(seed) {
-  let s = (seed >>> 0) || 1;
+  let state = (seed >>> 0) || 1;
   return () => {
-    s ^= s << 13; s >>>= 0;
-    s ^= s >>> 17;
-    s ^= s << 5; s >>>= 0;
-    return (s >>> 0) / 4294967296;
+    state ^= state << 13; state >>>= 0;
+    state ^= state >>> 17;
+    state ^= state << 5; state >>>= 0;
+    return (state >>> 0) / 4294967296;
   };
 }
 
 function randRange(rand, min, max) { return min + (max - min) * rand(); }
 function randInt(rand, min, max) { return Math.floor(randRange(rand, min, max + 1)); }
-
-function randomUnit(rand) {
-  const z = randRange(rand, -1, 1);
-  const a = randRange(rand, 0, Math.PI * 2);
-  const r = Math.sqrt(Math.max(0, 1 - z * z));
-  return { x: r * Math.cos(a), y: r * Math.sin(a), z };
-}
-
 function dot(a, b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 function length3(v) { return Math.hypot(v.x, v.y, v.z); }
 function scale3(v, k) { return { x: v.x * k, y: v.y * k, z: v.z * k }; }
+function add3(a, b) { return { x: a.x + b.x, y: a.y + b.y, z: a.z + b.z }; }
 function sub3(a, b) { return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }; }
 function normalize3(v) {
-  const m = length3(v) || 1;
-  return scale3(v, 1 / m);
+  const magnitude = length3(v) || 1;
+  return scale3(v, 1 / magnitude);
+}
+function mixDirection(a, b, amount) {
+  return normalize3(add3(scale3(a, 1 - amount), scale3(b, amount)));
+}
+
+function randomUnit(rand) {
+  const z = randRange(rand, -1, 1);
+  const angle = randRange(rand, 0, Math.PI * 2);
+  const radius = Math.sqrt(Math.max(0, 1 - z * z));
+  return { x: radius * Math.cos(angle), y: radius * Math.sin(angle), z };
 }
 
 function rotateEuler(v, ax, ay, az) {
   let x = v.x, y = v.y, z = v.z;
-  let c = Math.cos(ax), q = Math.sin(ax);
-  [y, z] = [c * y - q * z, q * y + c * z];
-  c = Math.cos(ay); q = Math.sin(ay);
-  [x, z] = [c * x + q * z, -q * x + c * z];
-  c = Math.cos(az); q = Math.sin(az);
-  [x, y] = [c * x - q * y, q * x + c * y];
+  let c = Math.cos(ax), s = Math.sin(ax);
+  [y, z] = [c * y - s * z, s * y + c * z];
+  c = Math.cos(ay); s = Math.sin(ay);
+  [x, z] = [c * x + s * z, -s * x + c * z];
+  c = Math.cos(az); s = Math.sin(az);
+  [x, y] = [c * x - s * y, s * x + c * y];
   return { x, y, z };
 }
 
-function balancedDirections(count, rand) {
+function distributedDirections(count, rand) {
   if (count <= 0) return [];
   const golden = Math.PI * (3 - Math.sqrt(5));
   const phase = rand() * Math.PI * 2;
   const ax = rand() * Math.PI * 2;
   const ay = rand() * Math.PI * 2;
   const az = rand() * Math.PI * 2;
+  const balance = settings.placementBalance / 100;
+  const jitter = settings.directionJitter / 100 * 0.42;
   const result = [];
+
   for (let i = 0; i < count; i++) {
     const z = 1 - 2 * ((i + 0.5) / count);
-    const r = Math.sqrt(Math.max(0, 1 - z * z));
-    const a = phase + i * golden + randRange(rand, -0.12, 0.12);
-    const v = { x: r * Math.cos(a), y: r * Math.sin(a), z };
-    result.push(normalize3(rotateEuler(v, ax, ay, az)));
+    const radius = Math.sqrt(Math.max(0, 1 - z * z));
+    const angle = phase + i * golden;
+    const evenDirection = normalize3(rotateEuler(
+      { x: radius * Math.cos(angle), y: radius * Math.sin(angle), z },
+      ax, ay, az
+    ));
+    const randomDirection = randomUnit(rand);
+    let direction = mixDirection(randomDirection, evenDirection, balance);
+    direction = mixDirection(direction, randomUnit(rand), jitter);
+    result.push(direction);
   }
   return result;
 }
 
-function shuffle(values, rand) {
-  for (let i = values.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [values[i], values[j]] = [values[j], values[i]];
-  }
-  return values;
-}
-
-function stratifiedValues(count, min, max, rand) {
-  if (count <= 0) return [];
-  const values = [];
-  for (let i = 0; i < count; i++) {
-    const t = (i + 0.18 + rand() * 0.64) / count;
-    values.push(min + (max - min) * t);
-  }
-  return shuffle(values, rand);
-}
-
-function centerWeighted(points, weights) {
+function recenterPoints(points, weights, strength) {
+  if (!points.length || strength <= 0) return points;
   let total = 0, cx = 0, cy = 0, cz = 0;
-  points.forEach((p, i) => {
-    const w = weights[i] || 1;
-    total += w; cx += p.x * w; cy += p.y * w; cz += p.z * w;
+  points.forEach((point, index) => {
+    const weight = weights[index] || 1;
+    total += weight;
+    cx += point.x * weight;
+    cy += point.y * weight;
+    cz += point.z * weight;
   });
   if (!total) return points;
-  const center = { x: cx / total, y: cy / total, z: cz / total };
-  return points.map(p => sub3(p, center));
+  const amount = strength / 100;
+  const center = scale3({ x: cx / total, y: cy / total, z: cz / total }, amount);
+  return points.map(point => sub3(point, center));
 }
 
 function elementWidth(rand) {
@@ -170,21 +184,28 @@ function buildScene() {
   normalizeSettings();
   const rand = makeRand(settings.seed);
   const volume = 230;
-  scene.spheres = [];
-  scene.lines = [];
+  scene = { spheres: [], lines: [] };
 
-  const sphereDirs = balancedDirections(settings.sphereCount, rand);
+  const sphereDirections = distributedDirections(settings.sphereCount, rand);
   const sphereRadii = Array.from(
     { length: settings.sphereCount },
     () => randRange(rand, settings.radiusMin, settings.radiusMax)
   );
-  let sphereCenters = sphereDirs.map((direction, i) => {
-    const radius = sphereRadii[i];
+  let sphereCenters = sphereDirections.map((direction, index) => {
+    const radius = sphereRadii[index];
     const available = Math.max(28, volume - radius * 0.45);
-    const distance = available * randRange(rand, 0.25, 0.88);
+    const distance = available * randRange(
+      rand,
+      settings.sphereDistanceMin / 100,
+      settings.sphereDistanceMax / 100
+    );
     return scale3(direction, distance);
   });
-  sphereCenters = centerWeighted(sphereCenters, sphereRadii.map(r => r * r));
+  sphereCenters = recenterPoints(
+    sphereCenters,
+    sphereRadii.map(radius => radius * radius),
+    settings.recenterStrength
+  );
 
   for (let i = 0; i < settings.sphereCount; i++) {
     scene.spheres.push({
@@ -195,10 +216,13 @@ function buildScene() {
     });
   }
 
-  const lineDirs = balancedDirections(settings.lineCount, rand);
-  const offsetDirs = balancedDirections(settings.lineCount, rand);
-  let linePoints = lineDirs.map((direction, i) => {
-    let offset = scale3(offsetDirs[i], randRange(rand, volume * 0.18, volume * 0.82));
+  const lineDirections = distributedDirections(settings.lineCount, rand);
+  const offsetDirections = distributedDirections(settings.lineCount, rand);
+  let linePoints = lineDirections.map((direction, index) => {
+    let offset = scale3(
+      offsetDirections[index],
+      volume * randRange(rand, settings.lineOffsetMin / 100, settings.lineOffsetMax / 100)
+    );
     offset = sub3(offset, scale3(direction, dot(offset, direction)));
     if (length3(offset) < 8) {
       const fallback = Math.abs(direction.z) < 0.85 ? { x: 0, y: 0, z: 1 } : { x: 0, y: 1, z: 0 };
@@ -207,14 +231,18 @@ function buildScene() {
         y: direction.z * fallback.x - direction.x * fallback.z,
         z: direction.x * fallback.y - direction.y * fallback.x
       });
-      offset = scale3(offset, randRange(rand, volume * 0.2, volume * 0.7));
+      offset = scale3(offset, volume * randRange(rand, 0.2, 0.7));
     }
     return offset;
   });
-  linePoints = centerWeighted(linePoints, linePoints.map(() => 1));
+  linePoints = recenterPoints(
+    linePoints,
+    linePoints.map(() => 1),
+    settings.recenterStrength
+  );
 
   for (let i = 0; i < settings.lineCount; i++) {
-    const direction = lineDirs[i];
+    const direction = lineDirections[i];
     let point = linePoints[i];
     point = sub3(point, scale3(direction, dot(point, direction)));
     scene.lines.push({
@@ -224,6 +252,7 @@ function buildScene() {
       colorIndex: (i + 1) % 2
     });
   }
+
   saveSettings();
   updateLabels();
 }
@@ -239,6 +268,15 @@ function normalizeSettings() {
   settings.radiusMin = clampInt(settings.radiusMin, 18, 180);
   settings.radiusMax = clampInt(settings.radiusMax, 24, 260);
   if (settings.radiusMin > settings.radiusMax) settings.radiusMax = settings.radiusMin;
+  settings.placementBalance = clampInt(settings.placementBalance, 0, 100);
+  settings.recenterStrength = clampInt(settings.recenterStrength, 0, 100);
+  settings.directionJitter = clampInt(settings.directionJitter, 0, 100);
+  settings.sphereDistanceMin = clampInt(settings.sphereDistanceMin, 0, 100);
+  settings.sphereDistanceMax = clampInt(settings.sphereDistanceMax, 0, 100);
+  if (settings.sphereDistanceMin > settings.sphereDistanceMax) settings.sphereDistanceMax = settings.sphereDistanceMin;
+  settings.lineOffsetMin = clampInt(settings.lineOffsetMin, 0, 100);
+  settings.lineOffsetMax = clampInt(settings.lineOffsetMax, 0, 100);
+  if (settings.lineOffsetMin > settings.lineOffsetMax) settings.lineOffsetMax = settings.lineOffsetMin;
   settings.rotationSpeed = clampInt(settings.rotationSpeed, 1, 30);
   settings.rotationLag = clampInt(settings.rotationLag, 1, 30);
 }
@@ -247,28 +285,24 @@ function clampInt(value, min, max) {
   return Math.max(min, Math.min(max, Math.round(Number(value))));
 }
 
-function rotatePoint(p) {
+function rotatePoint(point) {
   const cy = Math.cos(yaw), sy = Math.sin(yaw);
   const cp = Math.cos(pitch), sp = Math.sin(pitch);
-  const x1 = cy * p.x + sy * p.z;
-  const z1 = -sy * p.x + cy * p.z;
+  const x1 = cy * point.x + sy * point.z;
+  const z1 = -sy * point.x + cy * point.z;
   return {
     x: x1,
-    y: cp * p.y - sp * z1,
-    z: sp * p.y + cp * z1
+    y: cp * point.y - sp * z1,
+    z: sp * point.y + cp * z1
   };
 }
 
-function add(a, b, scale = 1) {
-  return { x: a.x + b.x * scale, y: a.y + b.y * scale, z: a.z + b.z * scale };
-}
-
-function project(p) {
+function project(point) {
   const scale = Math.min(cssW, cssH) / 650;
   return {
-    x: cssW * 0.5 + p.x * scale,
-    y: cssH * 0.5 - p.y * scale,
-    z: p.z,
+    x: cssW * 0.5 + point.x * scale,
+    y: cssH * 0.5 - point.y * scale,
+    z: point.z,
     scale
   };
 }
@@ -280,33 +314,33 @@ function resizeCanvas() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   canvas.width = Math.round(cssW * dpr);
   canvas.height = Math.round(cssH * dpr);
-  canvas.style.width = cssW + "px";
-  canvas.style.height = cssH + "px";
+  canvas.style.width = `${cssW}px`;
+  canvas.style.height = `${cssH}px`;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.imageSmoothingEnabled = false;
 }
 
 function palette() {
-  const cs = getComputedStyle(root);
+  const styles = getComputedStyle(root);
   return {
-    bg: cs.getPropertyValue("--bg").trim(),
-    a: cs.getPropertyValue("--line-a").trim(),
-    b: cs.getPropertyValue("--line-b").trim()
+    bg: styles.getPropertyValue("--bg").trim(),
+    a: styles.getPropertyValue("--line-a").trim(),
+    b: styles.getPropertyValue("--line-b").trim()
   };
 }
 
 function cellBrush(xCell, yCell, widthCells, color) {
-  const px = settings.pixelSize;
+  const pixelSize = settings.pixelSize;
   const width = Math.max(1, widthCells);
   const start = -Math.floor((width - 1) / 2);
   ctx.fillStyle = color;
   for (let oy = 0; oy < width; oy++) {
     for (let ox = 0; ox < width; ox++) {
       ctx.fillRect(
-        (xCell + start + ox) * px,
-        (yCell + start + oy) * px,
-        px,
-        px
+        (xCell + start + ox) * pixelSize,
+        (yCell + start + oy) * pixelSize,
+        pixelSize,
+        pixelSize
       );
     }
   }
@@ -319,65 +353,60 @@ function bresenham(x0, y0, x1, y1, callback) {
   const sx = x0 < x1 ? 1 : -1;
   const dy = -Math.abs(y1 - y0);
   const sy = y0 < y1 ? 1 : -1;
-  let err = dx + dy;
-  const total = Math.max(dx, -dy, 1);
-  let step = 0;
+  let error = dx + dy;
+  let guard = 0;
+  const limit = Math.max(dx, -dy, 1) * 2 + 8;
   while (true) {
-    callback(x0, y0, step / total);
+    callback(x0, y0);
     if (x0 === x1 && y0 === y1) break;
-    const e2 = 2 * err;
-    if (e2 >= dy) { err += dy; x0 += sx; }
-    if (e2 <= dx) { err += dx; y0 += sy; }
-    step++;
-    if (step > total * 2 + 8) break;
+    const e2 = 2 * error;
+    if (e2 >= dy) { error += dy; x0 += sx; }
+    if (e2 <= dx) { error += dx; y0 += sy; }
+    if (++guard > limit) break;
   }
 }
 
-function circleCells(cx, cy, r, callback) {
-  let x = Math.max(1, Math.round(r));
+function circleCells(cx, cy, radius, callback) {
+  let x = Math.max(1, Math.round(radius));
   let y = 0;
-  let err = 1 - x;
+  let error = 1 - x;
   while (x >= y) {
-    callback(cx + x, cy + y);
-    callback(cx + y, cy + x);
-    callback(cx - y, cy + x);
-    callback(cx - x, cy + y);
-    callback(cx - x, cy - y);
-    callback(cx - y, cy - x);
-    callback(cx + y, cy - x);
-    callback(cx + x, cy - y);
+    callback(cx + x, cy + y); callback(cx + y, cy + x);
+    callback(cx - y, cy + x); callback(cx - x, cy + y);
+    callback(cx - x, cy - y); callback(cx - y, cy - x);
+    callback(cx + y, cy - x); callback(cx + x, cy - y);
     y++;
-    if (err < 0) err += 2 * y + 1;
-    else { x--; err += 2 * (y - x + 1); }
+    if (error < 0) error += 2 * y + 1;
+    else { x--; error += 2 * (y - x + 1); }
   }
 }
 
 function clipInfiniteLine(px, py, dx, dy, minX, minY, maxX, maxY) {
-  const eps = 1e-8;
+  const epsilon = 1e-8;
   const points = [];
   function addPoint(x, y) {
     if (x < minX - 0.01 || x > maxX + 0.01 || y < minY - 0.01 || y > maxY + 0.01) return;
-    if (points.some(p => Math.hypot(p.x - x, p.y - y) < 0.01)) return;
+    if (points.some(point => Math.hypot(point.x - x, point.y - y) < 0.01)) return;
     points.push({ x, y });
   }
-  if (Math.abs(dx) > eps) {
-    let t = (minX - px) / dx;
-    addPoint(minX, py + t * dy);
-    t = (maxX - px) / dx;
-    addPoint(maxX, py + t * dy);
+  if (Math.abs(dx) > epsilon) {
+    let t = (minX - px) / dx; addPoint(minX, py + t * dy);
+    t = (maxX - px) / dx; addPoint(maxX, py + t * dy);
   }
-  if (Math.abs(dy) > eps) {
-    let t = (minY - py) / dy;
-    addPoint(px + t * dx, minY);
-    t = (maxY - py) / dy;
-    addPoint(px + t * dx, maxY);
+  if (Math.abs(dy) > epsilon) {
+    let t = (minY - py) / dy; addPoint(px + t * dx, minY);
+    t = (maxY - py) / dy; addPoint(px + t * dx, maxY);
   }
   if (points.length < 2) return null;
-  let best = [points[0], points[1]], bestD = -1;
+  let best = [points[0], points[1]];
+  let bestDistance = -1;
   for (let i = 0; i < points.length; i++) {
     for (let j = i + 1; j < points.length; j++) {
-      const d = (points[i].x - points[j].x) ** 2 + (points[i].y - points[j].y) ** 2;
-      if (d > bestD) { bestD = d; best = [points[i], points[j]]; }
+      const distance = (points[i].x - points[j].x) ** 2 + (points[i].y - points[j].y) ** 2;
+      if (distance > bestDistance) {
+        bestDistance = distance;
+        best = [points[i], points[j]];
+      }
     }
   }
   return best;

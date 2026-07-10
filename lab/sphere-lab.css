@@ -218,3 +218,10 @@ pre {
   .controls.is-hidden { transform: translateX(100%); }
   .panel-toggle { display: block; z-index: 11; }
 }
+.fieldset-note {
+  margin: 8px 0 0;
+  font-size: 9px;
+  line-height: 1.6;
+  opacity: .7;
+}
+.note a { color: inherit; text-underline-offset: .25em; }

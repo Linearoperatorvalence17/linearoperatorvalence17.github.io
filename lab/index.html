@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sphere + Lines Parameter Lab</title>
-  <meta name="description" content="球と直線群のドット描画パラメータを比較する試作">
+  <meta name="description" content="球と無限直線のドット投影を調整するパラメータラボ">
   <link rel="stylesheet" href="sphere-lab.css">
 </head>
 <body>
@@ -22,7 +22,7 @@
       <header class="controls-head">
         <div>
           <h1>Sphere + Lines</h1>
-          <p>球は輪郭だけを描き、直線は球の内外を問わず表示します</p>
+          <p>球は輪郭だけ、直線は球の内外を問わず画面端まで描きます</p>
         </div>
         <button id="theme-toggle" class="icon-button" type="button" aria-label="表示色を切り替える">◐</button>
       </header>
@@ -34,74 +34,43 @@
 
       <fieldset>
         <legend>個数</legend>
-        <label class="control-row">
-          <span>球の数</span>
-          <input id="sphere-count" type="range" min="1" max="16" step="1">
-          <output for="sphere-count"></output>
-        </label>
-        <label class="control-row">
-          <span>直線の数</span>
-          <input id="line-count" type="range" min="0" max="40" step="1">
-          <output for="line-count"></output>
-        </label>
+        <label class="control-row"><span>球の数</span><input id="sphere-count" type="range" min="1" max="16" step="1"><output for="sphere-count"></output></label>
+        <label class="control-row"><span>直線の数</span><input id="line-count" type="range" min="0" max="40" step="1"><output for="line-count"></output></label>
       </fieldset>
 
       <fieldset>
         <legend>描画単位</legend>
-        <label class="control-row">
-          <span>1セルの大きさ</span>
-          <input id="pixel-size" type="range" min="1" max="8" step="1">
-          <output for="pixel-size"></output>
-        </label>
-        <label class="control-row">
-          <span>描線の太さ</span>
-          <input id="stroke-width" type="range" min="1" max="8" step="1">
-          <output for="stroke-width"></output>
-        </label>
-        <label class="check-row">
-          <input id="random-width" type="checkbox">
-          <span>要素ごとに太さを変える</span>
-        </label>
+        <label class="control-row"><span>1セルの大きさ</span><input id="pixel-size" type="range" min="1" max="8" step="1"><output for="pixel-size"></output></label>
+        <label class="control-row"><span>描線の太さ</span><input id="stroke-width" type="range" min="1" max="8" step="1"><output for="stroke-width"></output></label>
+        <label class="check-row"><input id="random-width" type="checkbox"><span>要素ごとに太さを変える</span></label>
         <div id="width-range" class="sub-controls">
-          <label class="control-row">
-            <span>太さの下限</span>
-            <input id="stroke-min" type="range" min="1" max="8" step="1">
-            <output for="stroke-min"></output>
-          </label>
-          <label class="control-row">
-            <span>太さの上限</span>
-            <input id="stroke-max" type="range" min="1" max="8" step="1">
-            <output for="stroke-max"></output>
-          </label>
+          <label class="control-row"><span>太さの下限</span><input id="stroke-min" type="range" min="1" max="8" step="1"><output for="stroke-min"></output></label>
+          <label class="control-row"><span>太さの上限</span><input id="stroke-max" type="range" min="1" max="8" step="1"><output for="stroke-max"></output></label>
         </div>
       </fieldset>
 
       <fieldset>
         <legend>球の大きさ</legend>
-        <label class="control-row">
-          <span>半径の下限</span>
-          <input id="radius-min" type="range" min="18" max="180" step="2">
-          <output for="radius-min"></output>
-        </label>
-        <label class="control-row">
-          <span>半径の上限</span>
-          <input id="radius-max" type="range" min="24" max="260" step="2">
-          <output for="radius-max"></output>
-        </label>
+        <label class="control-row"><span>半径の下限</span><input id="radius-min" type="range" min="18" max="180" step="2"><output for="radius-min"></output></label>
+        <label class="control-row"><span>半径の上限</span><input id="radius-max" type="range" min="24" max="260" step="2"><output for="radius-max"></output></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>ランダム配置</legend>
+        <label class="control-row"><span>均等配置率</span><input id="placement-balance" type="range" min="0" max="100" step="1"><output for="placement-balance"></output></label>
+        <label class="control-row"><span>重心補正率</span><input id="recenter-strength" type="range" min="0" max="100" step="1"><output for="recenter-strength"></output></label>
+        <label class="control-row"><span>方向の揺らぎ</span><input id="direction-jitter" type="range" min="0" max="100" step="1"><output for="direction-jitter"></output></label>
+        <label class="control-row"><span>球の距離 下限</span><input id="sphere-distance-min" type="range" min="0" max="100" step="1"><output for="sphere-distance-min"></output></label>
+        <label class="control-row"><span>球の距離 上限</span><input id="sphere-distance-max" type="range" min="0" max="100" step="1"><output for="sphere-distance-max"></output></label>
+        <label class="control-row"><span>線の距離 下限</span><input id="line-offset-min" type="range" min="0" max="100" step="1"><output for="line-offset-min"></output></label>
+        <label class="control-row"><span>線の距離 上限</span><input id="line-offset-max" type="range" min="0" max="100" step="1"><output for="line-offset-max"></output></label>
+        <p class="fieldset-note">均等配置率0%で独立乱数、100%で低偏り配置。重心補正は全体が片側へ寄る量だけを戻します。</p>
       </fieldset>
 
       <fieldset>
         <legend>回転</legend>
-        <label class="control-row">
-          <span>マウス回転速度</span>
-          <input id="rotation-speed" type="range" min="1" max="30" step="1">
-          <output for="rotation-speed"></output>
-        </label>
-        <label class="control-row">
-          <span>追従の遅さ</span>
-          <input id="rotation-lag" type="range" min="1" max="30" step="1">
-          <output for="rotation-lag"></output>
-        </label>
+        <label class="control-row"><span>マウス回転速度</span><input id="rotation-speed" type="range" min="1" max="30" step="1"><output for="rotation-speed"></output></label>
+        <label class="control-row"><span>追従の遅さ</span><input id="rotation-lag" type="range" min="1" max="30" step="1"><output for="rotation-lag"></output></label>
         <button id="reset-view" class="quiet-button" type="button">向きを戻す</button>
       </fieldset>
 
@@ -119,7 +88,7 @@
         <pre id="settings-json"></pre>
       </details>
 
-      <p class="note">プレビュー上でマウスを動かすと回転します。配置はランダム性を残しつつ、画面の片側へ偏りにくい生成にしています。</p>
+      <p class="note"><a href="../">HP本体へ戻る</a>　プレビュー上でマウスを動かすと空間全体が回転します。</p>
     </aside>
   </main>
 

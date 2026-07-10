@@ -4,15 +4,103 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>k.a.256</title>
-  <meta name="description" content="k.a.256 website experiments">
-  <style>
-    html,body{height:100%;margin:0}body{display:grid;place-items:center;background:#fbfdff;color:#59636d;font-family:"Hiragino Sans","Yu Gothic",Meiryo,sans-serif}main{text-align:center}a{color:#59636d;text-underline-offset:.25em}
-  </style>
+  <meta name="description" content="イラストレーター k.a.256 のホームページ">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main>
-    <p>k.a.256</p>
-    <p><a href="./lab/">Sphere + Lines Parameter Lab</a></p>
-  </main>
+  <div class="frame">
+    <header class="top">
+      <p class="site-name">k.a.256</p>
+      <nav class="nav" aria-label="メインナビゲーション">
+        <a href="#home" data-nav="home">Home</a>
+        <a href="#about" data-nav="about">About</a>
+        <a href="#works" data-nav="works">Works</a>
+        <a href="#links" data-nav="links">Links</a>
+      </nav>
+    </header>
+
+    <main class="stage">
+      <section class="panel panel-home" data-panel="home" tabindex="-1" aria-label="Home">
+        <p class="circle-name">SiO₂･nH₂O</p>
+      </section>
+
+      <section class="panel panel-about" data-panel="about" tabindex="-1" aria-label="About" hidden>
+        <div class="about-cols">
+          <div class="about-main">
+            <h1 class="h">About</h1>
+            <p class="about-text">イラストレーター。人物と図形、線を組み合わせた絵を描いています。プロフィール本文は仮置きです。</p>
+            <p class="about-text">ご依頼・ご相談は Discord までご連絡ください。</p>
+            <p class="contact">Discord: <a href="https://discord.com/users/290491500943507478" target="_blank" rel="noopener noreferrer">_k256</a></p>
+            <p class="lab-link"><a href="./lab/">Sphere + Lines Parameter Lab</a></p>
+          </div>
+
+          <div class="about-lists">
+            <div class="list-block">
+              <h2 class="h-sub">Selected Works</h2>
+              <ul class="flat-list">
+                <li><span class="y">2026</span><span>Pixio クリエイターコラボ第17弾 — マウスパッドイラスト</span></li>
+                <li><span class="y">2025</span><span>『ゲーム音楽で世界を拡げる人たち――名曲の生まれた舞台裏』— 表紙イラスト</span></li>
+                <li><span class="y">2024</span><span>gaburyu「スキンメッセンジャ feat. やぎぬまかな」— アートワークイラスト</span></li>
+                <li><span class="y">2024</span><span>TOKIQIL 061 — 謎解き制作・Tシャツイラスト</span></li>
+              </ul>
+            </div>
+            <div class="list-block">
+              <h2 class="h-sub">Books</h2>
+              <ul class="flat-list">
+                <li><span class="y">2026</span><span>Artbook Vol.01–03 “comPileAll” — COMITIA 155</span></li>
+                <li><span class="y">2025</span><span>Artbook Vol.03 “Antilepton” — COMITIA 154</span></li>
+                <li><span class="y">2024</span><span>Artbook Vol.02 “Lemniscate” — COMITIA 150</span></li>
+                <li><span class="y">2023</span><span>Artbook Vol.01 “Pixeleport” — COMITIA 144</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel panel-works" data-panel="works" tabindex="-1" aria-label="Works" hidden>
+        <div class="works-layout">
+          <div class="works-view">
+            <div id="works-image" role="img" aria-label="k.a.256 のイラスト作品 1"></div>
+          </div>
+          <div class="works-side">
+            <h1 class="h">Works</h1>
+            <p class="works-counter"><span id="works-num">01</span> / <span id="works-total">09</span></p>
+            <div class="works-ctrl">
+              <button id="works-prev" type="button" class="step-btn" aria-label="前の作品">−</button>
+              <button id="works-next" type="button" class="step-btn" aria-label="次の作品">＋</button>
+            </div>
+            <div id="works-thumbs" class="works-thumbs" role="listbox" aria-label="作品の一覧"></div>
+            <p class="works-pixiv">作品一覧は <a href="https://www.pixiv.net/users/12008048" target="_blank" rel="noopener noreferrer">Pixiv</a> へ</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel panel-links" data-panel="links" tabindex="-1" aria-label="Links" hidden>
+        <h1 class="h">Links</h1>
+        <ul class="links-list">
+          <li><a href="https://discord.com/users/290491500943507478" target="_blank" rel="noopener noreferrer">Discord</a></li>
+          <li><a href="https://twitter.com/_k256" target="_blank" rel="noopener noreferrer">X</a></li>
+          <li><a href="https://www.pixiv.net/users/12008048" target="_blank" rel="noopener noreferrer">Pixiv</a></li>
+          <li><a href="https://skeb.jp/@_k256" target="_blank" rel="noopener noreferrer">Skeb</a></li>
+          <li><a href="https://tsukimimi.booth.pm/" target="_blank" rel="noopener noreferrer">BOOTH</a></li>
+          <li><a href="https://k256x.fanbox.cc/" target="_blank" rel="noopener noreferrer">FANBOX</a></li>
+          <li><a href="https://www.patreon.com/c/_k256/" target="_blank" rel="noopener noreferrer">Patreon</a></li>
+          <li><a href="https://www.instagram.com/k2c6_" target="_blank" rel="noopener noreferrer">Instagram</a></li>
+          <li><a href="https://www.threads.com/k2c6_" target="_blank" rel="noopener noreferrer">Threads</a></li>
+          <li><a href="https://mixi.social/@k256" target="_blank" rel="noopener noreferrer">mixi2</a></li>
+          <li><a href="https://bsky.app/profile/k256.bsky.social" target="_blank" rel="noopener noreferrer">Bluesky</a></li>
+          <li><a href="https://store.line.me/stickershop/author/5401284/ja" target="_blank" rel="noopener noreferrer">LINE sticker</a></li>
+          <li><a href="https://suzuri.jp/ka2co6" target="_blank" rel="noopener noreferrer">SUZURI</a></li>
+          <li><a href="https://potofu.me/ka256" target="_blank" rel="noopener noreferrer">POTOFU</a></li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="表示モードを切り替える">
+    <span aria-hidden="true"></span>
+  </button>
+
+  <script src="script.js"></script>
 </body>
 </html>
