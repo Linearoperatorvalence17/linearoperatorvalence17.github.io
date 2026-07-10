@@ -6,6 +6,7 @@
   <title>Sphere + Lines Parameter Lab</title>
   <meta name="description" content="球と無限直線のドット投影を調整するパラメータラボ">
   <link rel="stylesheet" href="sphere-lab.css">
+  <link rel="stylesheet" href="lab-adjustments.css">
 </head>
 <body>
   <main class="lab-shell">
@@ -40,13 +41,14 @@
 
       <fieldset>
         <legend>描画単位</legend>
-        <label class="control-row"><span>1セルの大きさ</span><input id="pixel-size" type="range" min="1" max="8" step="1"><output for="pixel-size"></output></label>
+        <label class="control-row"><span>1セルの大きさ</span><input id="pixel-size" type="range" min="0.5" max="8" step="0.5"><output for="pixel-size"></output></label>
         <label class="control-row"><span>描線の太さ</span><input id="stroke-width" type="range" min="1" max="8" step="1"><output for="stroke-width"></output></label>
         <label class="check-row"><input id="random-width" type="checkbox"><span>要素ごとに太さを変える</span></label>
         <div id="width-range" class="sub-controls">
           <label class="control-row"><span>太さの下限</span><input id="stroke-min" type="range" min="1" max="8" step="1"><output for="stroke-min"></output></label>
           <label class="control-row"><span>太さの上限</span><input id="stroke-max" type="range" min="1" max="8" step="1"><output for="stroke-max"></output></label>
         </div>
+        <p class="fieldset-note">セルは0.5px刻み。描線の太さはセル数の整数値です。</p>
       </fieldset>
 
       <fieldset>
@@ -93,6 +95,7 @@
   </main>
 
   <script src="sphere-core.js"></script>
+  <script src="sphere-resolution.js"></script>
   <script src="sphere-render.js"></script>
   <script src="sphere-ui.js"></script>
 </body>
