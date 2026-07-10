@@ -28,10 +28,9 @@
   position: absolute;
   display: block;
   line-height: 1;
-  opacity: 0;
+  opacity: 1;
   user-select: none;
   transform: translate(-50%, -50%);
-  animation: cursor-symbol-flicker var(--symbol-life, 900ms) steps(1, end) forwards;
 }
 
 .cursor-symbol[data-tone="a"] {
@@ -40,16 +39,6 @@
 
 .cursor-symbol[data-tone="b"] {
   color: var(--line-b);
-}
-
-@keyframes cursor-symbol-flicker {
-  0% { opacity: 0; }
-  12% { opacity: 1; }
-  30% { opacity: 0; }
-  46% { opacity: 1; }
-  64% { opacity: 0; }
-  82% { opacity: 1; }
-  100% { opacity: 0; }
 }
 
 #works-image {
