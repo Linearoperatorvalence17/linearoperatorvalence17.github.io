@@ -4,7 +4,7 @@
   const panels = ["home", "about", "works", "links"];
   const homePanel = document.querySelector(".panel-home");
   const cursorSymbols = document.getElementById("cursor-symbols");
-  const cursorSymbolCount = 20;
+  const cursorSymbolCount = 12;
   const symbolPatterns = [
     {
       name: "circle-5",
