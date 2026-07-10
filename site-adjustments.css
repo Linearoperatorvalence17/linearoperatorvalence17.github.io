@@ -17,6 +17,7 @@
 }
 
 .cursor-symbols {
+  --dot-unit: 2px;
   position: absolute;
   inset: 0;
   z-index: 1;
@@ -26,11 +27,21 @@
 
 .cursor-symbol {
   position: absolute;
-  display: block;
-  line-height: 1;
+  display: grid;
+  grid-template-columns: repeat(var(--grid-size), var(--dot-unit));
+  grid-template-rows: repeat(var(--grid-size), var(--dot-unit));
+  width: calc(var(--grid-size) * var(--dot-unit));
+  height: calc(var(--grid-size) * var(--dot-unit));
   opacity: 1;
   user-select: none;
   transform: translate(-50%, -50%);
+}
+
+.cursor-pixel {
+  display: block;
+  width: var(--dot-unit);
+  height: var(--dot-unit);
+  background: currentColor;
 }
 
 .cursor-symbol[data-tone="a"] {
