@@ -20,6 +20,7 @@ def main() -> None:
     files = sorted(
         (path for path in WORKS_DIR.rglob("*") if path.is_file() and path.suffix.casefold() in EXTENSIONS),
         key=natural_key,
+        reverse=True,
     )
     paths = [path.relative_to(ROOT).as_posix() for path in files]
     content = "window.KA256_WORKS = " + json.dumps(paths, ensure_ascii=False, indent=2) + ";\n"
