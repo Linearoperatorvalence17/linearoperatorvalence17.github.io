@@ -31,7 +31,7 @@
   opacity: 0;
   user-select: none;
   transform: translate(-50%, -50%);
-  animation: cursor-symbol-flicker var(--symbol-life, 1200ms) steps(1, end) forwards;
+  animation: cursor-symbol-flicker var(--symbol-life, 900ms) steps(1, end) forwards;
 }
 
 .cursor-symbol[data-tone="a"] {
@@ -44,11 +44,11 @@
 
 @keyframes cursor-symbol-flicker {
   0% { opacity: 0; }
-  10% { opacity: .75; }
-  28% { opacity: .18; }
-  44% { opacity: .72; }
-  66% { opacity: .28; }
-  84% { opacity: .68; }
+  12% { opacity: 1; }
+  30% { opacity: 0; }
+  46% { opacity: 1; }
+  64% { opacity: 0; }
+  82% { opacity: 1; }
   100% { opacity: 0; }
 }
 
