@@ -11,7 +11,10 @@
   let pointerInsideHome = false;
   let pointerMoving = false;
   let pointerStopTimer = 0;
-  let lastSymbolAt = 0;
+  let motionFrame = 0;
+  let motionClock = 0;
+  let lastFrameAt = 0;
+  let lastSymbolAt = -Infinity;
   let pointerX = 0;
   let pointerY = 0;
 
@@ -19,10 +22,13 @@
     cursorSymbols?.replaceChildren();
   }
 
-  function stopCursorSymbols() {
+  function pauseCursorSymbols() {
     pointerMoving = false;
     window.clearTimeout(pointerStopTimer);
-    clearCursorSymbols();
+    if (motionFrame) {
+      cancelAnimationFrame(motionFrame);
+      motionFrame = 0;
+    }
   }
 
   function spawnCursorSymbol() {
@@ -45,15 +51,43 @@
     symbol.className = "cursor-symbol";
     symbol.textContent = symbolGlyphs[Math.floor(Math.random() * symbolGlyphs.length)];
     symbol.dataset.tone = Math.random() < 0.5 ? "a" : "b";
+    symbol.dataset.bornAt = String(motionClock);
+    symbol.dataset.life = String(700 + Math.floor(Math.random() * 500));
     symbol.style.left = `${Math.max(8, Math.min(rect.width - 8, x))}px`;
     symbol.style.top = `${Math.max(8, Math.min(rect.height - 8, y))}px`;
     symbol.style.fontSize = `${10 + Math.floor(Math.random() * 9)}px`;
-    symbol.style.setProperty("--symbol-life", `${700 + Math.floor(Math.random() * 500)}ms`);
-    symbol.style.animationDelay = `${Math.floor(Math.random() * 70)}ms`;
-    symbol.addEventListener("animationend", () => symbol.remove(), { once: true });
     cursorSymbols.appendChild(symbol);
 
     while (cursorSymbols.childElementCount > 20) cursorSymbols.firstElementChild?.remove();
+  }
+
+  function updateCursorSymbols(now) {
+    motionFrame = 0;
+    if (!pointerMoving || active !== "home" || !pointerInsideHome || document.hidden) return;
+
+    if (!lastFrameAt) lastFrameAt = now;
+    motionClock += Math.min(50, now - lastFrameAt);
+    lastFrameAt = now;
+
+    if (motionClock - lastSymbolAt >= 70) {
+      lastSymbolAt = motionClock;
+      spawnCursorSymbol();
+    }
+
+    cursorSymbols?.querySelectorAll(".cursor-symbol").forEach(symbol => {
+      const bornAt = Number(symbol.dataset.bornAt);
+      const life = Number(symbol.dataset.life);
+      if (motionClock - bornAt >= life) symbol.remove();
+    });
+
+    motionFrame = requestAnimationFrame(updateCursorSymbols);
+  }
+
+  function resumeCursorSymbols() {
+    if (pointerMoving || reduceMotion) return;
+    pointerMoving = true;
+    lastFrameAt = 0;
+    motionFrame = requestAnimationFrame(updateCursorSymbols);
   }
 
   homePanel?.addEventListener("pointerenter", event => {
@@ -66,23 +100,17 @@
   homePanel?.addEventListener("pointermove", event => {
     if (event.pointerType === "touch") return;
     pointerInsideHome = true;
-    pointerMoving = true;
     pointerX = event.clientX;
     pointerY = event.clientY;
-
-    const now = performance.now();
-    if (now - lastSymbolAt >= 70) {
-      lastSymbolAt = now;
-      spawnCursorSymbol();
-    }
+    resumeCursorSymbols();
 
     window.clearTimeout(pointerStopTimer);
-    pointerStopTimer = window.setTimeout(stopCursorSymbols, 110);
+    pointerStopTimer = window.setTimeout(pauseCursorSymbols, 110);
   }, { passive: true });
 
   homePanel?.addEventListener("pointerleave", () => {
     pointerInsideHome = false;
-    stopCursorSymbols();
+    pauseCursorSymbols();
   });
 
   function showPanel(name, pushHash = false) {
@@ -100,7 +128,8 @@
     if (name === "works" && !workLoaded) showWork(workIndex);
     if (name !== "home") {
       pointerInsideHome = false;
-      stopCursorSymbols();
+      pauseCursorSymbols();
+      clearCursorSymbols();
     }
   }
 
