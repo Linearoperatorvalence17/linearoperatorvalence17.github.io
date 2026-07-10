@@ -4,6 +4,7 @@
   const panels = ["home", "about", "works", "links"];
   const homePanel = document.querySelector(".panel-home");
   const cursorSymbols = document.getElementById("cursor-symbols");
+  const cursorSymbolCount = 20;
   const symbolPatterns = [
     {
       name: "circle-5",
@@ -47,7 +48,6 @@
   let motionFrame = 0;
   let motionClock = 0;
   let lastFrameAt = 0;
-  let lastSymbolAt = -Infinity;
   let pointerX = 0;
   let pointerY = 0;
   let pointerSpeed = 0;
@@ -90,7 +90,7 @@
     return symbol;
   }
 
-  function spawnCursorSymbol() {
+  function spawnCursorSymbol(stagger = false) {
     if (
       active !== "home" ||
       !pointerInsideHome ||
@@ -107,20 +107,29 @@
     const symbol = buildPixelSymbol(pattern);
     const x = pointerX - rect.left + Math.cos(angle) * radius;
     const y = pointerY - rect.top + Math.sin(angle) * radius;
+    const life = 700 + Math.floor(Math.random() * 500);
 
     symbol.dataset.tone = Math.random() < 0.5 ? "a" : "b";
-    symbol.dataset.bornAt = String(motionClock);
-    symbol.dataset.life = String(700 + Math.floor(Math.random() * 500));
+    symbol.dataset.life = String(life);
+    symbol.dataset.bornAt = String(stagger ? motionClock - Math.random() * life : motionClock);
     symbol.style.left = `${Math.max(8, Math.min(rect.width - 8, x))}px`;
     symbol.style.top = `${Math.max(8, Math.min(rect.height - 8, y))}px`;
     cursorSymbols.appendChild(symbol);
-
-    while (cursorSymbols.childElementCount > 36) cursorSymbols.firstElementChild?.remove();
   }
 
-  function getSpawnInterval() {
+  function maintainCursorSymbolCount(stagger = false) {
+    if (!cursorSymbols) return;
+    while (cursorSymbols.childElementCount < cursorSymbolCount) {
+      spawnCursorSymbol(stagger);
+    }
+    while (cursorSymbols.childElementCount > cursorSymbolCount) {
+      cursorSymbols.firstElementChild?.remove();
+    }
+  }
+
+  function getTurnoverRate() {
     const speedRatio = Math.min(1, pointerSpeed / 1.8);
-    return 120 - speedRatio * 90;
+    return 1 + speedRatio * 3;
   }
 
   function updateCursorSymbols(now) {
@@ -128,20 +137,16 @@
     if (!pointerMoving || active !== "home" || !pointerInsideHome || document.hidden) return;
 
     if (!lastFrameAt) lastFrameAt = now;
-    motionClock += Math.min(50, now - lastFrameAt);
+    const elapsed = Math.min(50, now - lastFrameAt);
+    motionClock += elapsed * getTurnoverRate();
     lastFrameAt = now;
-
-    const spawnInterval = getSpawnInterval();
-    if (motionClock - lastSymbolAt >= spawnInterval) {
-      lastSymbolAt = motionClock;
-      spawnCursorSymbol();
-    }
 
     cursorSymbols?.querySelectorAll(".cursor-symbol").forEach(symbol => {
       const bornAt = Number(symbol.dataset.bornAt);
       const life = Number(symbol.dataset.life);
       if (motionClock - bornAt >= life) symbol.remove();
     });
+    maintainCursorSymbolCount();
 
     motionFrame = requestAnimationFrame(updateCursorSymbols);
   }
@@ -150,6 +155,7 @@
     if (pointerMoving || reduceMotion) return;
     pointerMoving = true;
     lastFrameAt = 0;
+    maintainCursorSymbolCount(true);
     motionFrame = requestAnimationFrame(updateCursorSymbols);
   }
 
