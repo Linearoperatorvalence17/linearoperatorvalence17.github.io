@@ -58,7 +58,7 @@ document.getElementById("random-params").addEventListener("click", () => {
     seed: Math.floor(random() * 0xffffffff) >>> 0,
     sphereCount: Math.floor(2 + random() * 6),
     lineCount: Math.floor(4 + random() * 12),
-    pixelSize: 1 + Math.floor(random() * 3),
+    pixelSize: 0.5 + Math.floor(random() * 6) * 0.5,
     strokeWidth: 1 + Math.floor(random() * 3),
     randomWidth: random() > 0.65,
     strokeMin: 1,
