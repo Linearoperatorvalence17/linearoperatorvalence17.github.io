@@ -9,6 +9,9 @@
   let active = "home";
   let workLoaded = false;
   let pointerInsideHome = false;
+  let pointerMoving = false;
+  let pointerStopTimer = 0;
+  let lastSymbolAt = 0;
   let pointerX = 0;
   let pointerY = 0;
 
@@ -16,8 +19,21 @@
     cursorSymbols?.replaceChildren();
   }
 
+  function stopCursorSymbols() {
+    pointerMoving = false;
+    window.clearTimeout(pointerStopTimer);
+    clearCursorSymbols();
+  }
+
   function spawnCursorSymbol() {
-    if (active !== "home" || !pointerInsideHome || reduceMotion || !cursorSymbols || document.hidden) return;
+    if (
+      active !== "home" ||
+      !pointerInsideHome ||
+      !pointerMoving ||
+      reduceMotion ||
+      !cursorSymbols ||
+      document.hidden
+    ) return;
 
     const rect = cursorSymbols.getBoundingClientRect();
     const angle = Math.random() * Math.PI * 2;
@@ -32,8 +48,8 @@
     symbol.style.left = `${Math.max(8, Math.min(rect.width - 8, x))}px`;
     symbol.style.top = `${Math.max(8, Math.min(rect.height - 8, y))}px`;
     symbol.style.fontSize = `${10 + Math.floor(Math.random() * 9)}px`;
-    symbol.style.setProperty("--symbol-life", `${900 + Math.floor(Math.random() * 650)}ms`);
-    symbol.style.animationDelay = `${Math.floor(Math.random() * 120)}ms`;
+    symbol.style.setProperty("--symbol-life", `${700 + Math.floor(Math.random() * 500)}ms`);
+    symbol.style.animationDelay = `${Math.floor(Math.random() * 70)}ms`;
     symbol.addEventListener("animationend", () => symbol.remove(), { once: true });
     cursorSymbols.appendChild(symbol);
 
@@ -50,15 +66,24 @@
   homePanel?.addEventListener("pointermove", event => {
     if (event.pointerType === "touch") return;
     pointerInsideHome = true;
+    pointerMoving = true;
     pointerX = event.clientX;
     pointerY = event.clientY;
+
+    const now = performance.now();
+    if (now - lastSymbolAt >= 70) {
+      lastSymbolAt = now;
+      spawnCursorSymbol();
+    }
+
+    window.clearTimeout(pointerStopTimer);
+    pointerStopTimer = window.setTimeout(stopCursorSymbols, 110);
   }, { passive: true });
 
   homePanel?.addEventListener("pointerleave", () => {
     pointerInsideHome = false;
+    stopCursorSymbols();
   });
-
-  window.setInterval(spawnCursorSymbol, 120);
 
   function showPanel(name, pushHash = false) {
     if (!panels.includes(name)) name = "home";
@@ -75,7 +100,7 @@
     if (name === "works" && !workLoaded) showWork(workIndex);
     if (name !== "home") {
       pointerInsideHome = false;
-      clearCursorSymbols();
+      stopCursorSymbols();
     }
   }
 
