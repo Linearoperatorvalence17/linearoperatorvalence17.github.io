@@ -4,7 +4,40 @@
   const panels = ["home", "about", "works", "links"];
   const homePanel = document.querySelector(".panel-home");
   const cursorSymbols = document.getElementById("cursor-symbols");
-  const symbolGlyphs = ["・", "○", "。", "+", "×"];
+  const symbolPatterns = [
+    {
+      name: "circle-5",
+      rows: ["01110", "10001", "10001", "10001", "01110"],
+    },
+    {
+      name: "cross-5",
+      rows: ["00100", "00100", "11111", "00100", "00100"],
+    },
+    {
+      name: "x-5",
+      rows: ["10001", "01010", "00100", "01010", "10001"],
+    },
+    {
+      name: "circle-4",
+      rows: ["0110", "1001", "1001", "0110"],
+    },
+    {
+      name: "cross-3",
+      rows: ["010", "111", "010"],
+    },
+    {
+      name: "x-3",
+      rows: ["101", "010", "101"],
+    },
+    {
+      name: "diamond-circle-3",
+      rows: ["010", "101", "010"],
+    },
+    {
+      name: "dot-2",
+      rows: ["11", "11"],
+    },
+  ];
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let active = "home";
   let workLoaded = false;
@@ -31,6 +64,27 @@
     }
   }
 
+  function buildPixelSymbol(pattern) {
+    const symbol = document.createElement("span");
+    symbol.className = "cursor-symbol";
+    symbol.dataset.pattern = pattern.name;
+    symbol.style.setProperty("--grid-size", String(pattern.rows.length));
+    symbol.setAttribute("aria-hidden", "true");
+
+    pattern.rows.forEach((row, rowIndex) => {
+      [...row].forEach((cell, columnIndex) => {
+        if (cell !== "1") return;
+        const pixel = document.createElement("i");
+        pixel.className = "cursor-pixel";
+        pixel.style.gridRowStart = String(rowIndex + 1);
+        pixel.style.gridColumnStart = String(columnIndex + 1);
+        symbol.appendChild(pixel);
+      });
+    });
+
+    return symbol;
+  }
+
   function spawnCursorSymbol() {
     if (
       active !== "home" ||
@@ -44,18 +98,16 @@
     const rect = cursorSymbols.getBoundingClientRect();
     const angle = Math.random() * Math.PI * 2;
     const radius = 18 + Math.random() * 52;
-    const symbol = document.createElement("span");
+    const pattern = symbolPatterns[Math.floor(Math.random() * symbolPatterns.length)];
+    const symbol = buildPixelSymbol(pattern);
     const x = pointerX - rect.left + Math.cos(angle) * radius;
     const y = pointerY - rect.top + Math.sin(angle) * radius;
 
-    symbol.className = "cursor-symbol";
-    symbol.textContent = symbolGlyphs[Math.floor(Math.random() * symbolGlyphs.length)];
     symbol.dataset.tone = Math.random() < 0.5 ? "a" : "b";
     symbol.dataset.bornAt = String(motionClock);
     symbol.dataset.life = String(700 + Math.floor(Math.random() * 500));
     symbol.style.left = `${Math.max(8, Math.min(rect.width - 8, x))}px`;
     symbol.style.top = `${Math.max(8, Math.min(rect.height - 8, y))}px`;
-    symbol.style.fontSize = `${10 + Math.floor(Math.random() * 9)}px`;
     cursorSymbols.appendChild(symbol);
 
     while (cursorSymbols.childElementCount > 20) cursorSymbols.firstElementChild?.remove();
