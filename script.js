@@ -3,6 +3,7 @@
 
   const panels = ["home", "about", "works", "links"];
   let active = "home";
+  let workLoaded = false;
 
   function showPanel(name, pushHash = false) {
     if (!panels.includes(name)) name = "home";
@@ -16,6 +17,7 @@
       else link.removeAttribute("aria-current");
     });
     if (pushHash && location.hash !== `#${name}`) history.pushState(null, "", `#${name}`);
+    if (name === "works" && !workLoaded) showWork(workIndex);
   }
 
   document.querySelectorAll("[data-nav]").forEach(link => {
@@ -49,11 +51,11 @@
     element.src = path;
     element.alt = alt;
     element.decoding = "async";
-    element.loading = "eager";
     return element;
   }
 
   function showWork(index) {
+    workLoaded = true;
     if (!workCount) {
       workIndex = 0;
       number.textContent = "00";
@@ -78,13 +80,13 @@
     });
   }
 
-  works.forEach((path, index) => {
+  works.forEach((_, index) => {
     const thumb = document.createElement("button");
     thumb.type = "button";
     thumb.className = "works-thumb";
+    thumb.textContent = String(index + 1).padStart(2, "0");
     thumb.setAttribute("role", "option");
     thumb.setAttribute("aria-label", `作品 ${index + 1} を表示`);
-    thumb.appendChild(makeImage(path, ""));
     thumb.addEventListener("click", () => showWork(index));
     thumbs.appendChild(thumb);
   });
@@ -108,5 +110,4 @@
   });
 
   showPanel(location.hash.slice(1) || "home");
-  showWork(0);
 })();
